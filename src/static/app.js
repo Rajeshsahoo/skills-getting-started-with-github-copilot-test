@@ -25,9 +25,33 @@ document.addEventListener("DOMContentLoaded", () => {
           <p>${details.description}</p>
           <p><strong>Schedule:</strong> ${details.schedule}</p>
           <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
+          <div class="participants-section">
+            <p><strong>Participants:</strong></p>
+            ${details.participants.length > 0 ? `<ul class="participants-list">${details.participants.map(email => `<li>${email} <button class="delete-participant" data-email="${email}" data-activity="${name}">&times;</button></li>`).join('')}</ul>` : '<p class="no-participants">No participants yet.</p>'}
+          </div>
         `;
 
         activitiesList.appendChild(activityCard);
+
+        // Add delete event listeners
+        activityCard.querySelectorAll('.delete-participant').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const email = e.target.dataset.email;
+            const activity = e.target.dataset.activity;
+            try {
+              const response = await fetch(`/activities/${encodeURIComponent(activity)}/signup?email=${encodeURIComponent(email)}`, { method: 'DELETE' });
+              if (response.ok) {
+                fetchActivities(); // refresh the activities
+              } else {
+                const error = await response.json();
+                alert(error.detail || 'Failed to remove participant');
+              }
+            } catch (error) {
+              alert('Error removing participant');
+            }
+          });
+        });
 
         // Add option to select dropdown
         const option = document.createElement("option");
@@ -62,6 +86,7 @@ document.addEventListener("DOMContentLoaded", () => {
         messageDiv.textContent = result.message;
         messageDiv.className = "success";
         signupForm.reset();
+        fetchActivities(); // refresh the activities list
       } else {
         messageDiv.textContent = result.detail || "An error occurred";
         messageDiv.className = "error";
